@@ -8,3 +8,4 @@ npm-debug.log
 timetable.ics
 *.md
 .github
+index.js.old

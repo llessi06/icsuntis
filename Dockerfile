@@ -14,7 +14,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --prod --frozen-lockfile
 
 # Copy application files
-COPY index.js ./
+COPY src ./src
 
 # Create a non-root user to run the application
 RUN addgroup -g 1001 -S nodejs && \
@@ -32,4 +32,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3979/', (r) => {process.exit(r.statusCode === 302 ? 0 : 1)})"
 
 # Start the application
-CMD ["node", "index.js"]
+CMD ["node", "src/index.js"]

@@ -82,7 +82,13 @@ npm install
 Start the server:
 
 ```bash
-node index.js
+npm start
+```
+
+Or directly:
+
+```bash
+node src/index.js
 ```
 
 ### Accessing Your Calendar
