@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  icsuntis:
+    build: .
+    container_name: icsuntis
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3979}:3979"
+    environment:
+      - WEBUNTIS_SERVER=${WEBUNTIS_SERVER}
+      - WEBUNTIS_SCHOOL=${WEBUNTIS_SCHOOL}
+      - WEBUNTIS_USERNAME=${WEBUNTIS_USERNAME}
+      - WEBUNTIS_PASSWORD=${WEBUNTIS_PASSWORD}
+      - ICAL_SECRET_PATH=${ICAL_SECRET_PATH}
+      - PORT=${PORT:-3979}
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3979/', (r) => {process.exit(r.statusCode === 302 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s

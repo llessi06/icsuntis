@@ -1,50 +1,131 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/tschuerti/icsuntis/refs/heads/main/logo.png" />
+<p>
+  <img alt="IMG" src="https://raw.githubusercontent.com/tschuerti/icsuntis/refs/heads/main/logo.png" />
 </p>
 
 ##
 
-ICSUntis is a simple JavaScript server that generates an ICS file from your WebUntis substitution plan. It is designed to be run on a server and can be accessed via a simple HTTP GET request.
+ICSUntis is a simple JavaScript server that generates an ICS file from your WebUntis substitution plan. It is designed
+to be run on a server and can be accessed via a simple HTTP GET request.
 
+## Features
 
+- Automatically generates iCal files from your WebUntis timetable
+- Updates the calendar every 10 minutes
+- Secure access via a secret URL path
+- Docker support for easy deployment
+- Merges consecutive lessons with the same subject
 
-## Official solution
+## Setup
 
-WebUntis offers an official solution to subscribe to your timetable via ICS, but not every school has enabled it.
+### 1. Get Your WebUntis Information
 
-To check if your school has enabled this feature, visit the following link:
-```http
-https://help.untis.at/hc/de/articles/360014979580-Wie-funktioniert-das-iCal-Kalender-Abonnement-in-WebUntis
+To use ICSUntis, you need to know:
+
+**Server URL**: Find this by logging into WebUntis and looking at the URL. It should look like:
+
 ```
-
-If your school has disabled this function, use my script 🙂
-
-## Usage
-
-To use ICSUntis, you need to know the URL of your WebUntis server. You can find the server by logging into WebUntis and looking at the URL. It should look something like this:
-
-```http
 https://<server>.webuntis.com/
 ```
 
-To get your school's short name, you can press on the RSS-Feed button in the WebUntis substitution plan. The URL should look something like this:
-    
-```http
+**School Name**: Press the RSS-Feed button in the WebUntis substitution plan. The URL will show:
+
+```
 https://<server>.webuntis.com/WebUntis/NewsFeed.do?school=<school>
 ```
 
-To generate an ICS file, you need to make a GET request to the ICSUntis server with the following parameters:
+### 2. Configure Environment Variables
 
-- `server`: The full URL of your WebUntis server (including .webuntis.com if it isnt running on a custom domain)
-- `school`: The short name of your school in WebUntis
-- `username`: Your WebUntis username
-- `password`: Your WebUntis password
+Copy the example environment file:
 
-Here is an example of a GET request:
-
-```http
-http://<your-server-adress>:3979?server=<server>.webuntis.com&school=<school>&username=<username>&password=<password>
+```bash
+cp .env.example .env
 ```
 
+Edit `.env` with your credentials:
+
+```env
+WEBUNTIS_SERVER=your-server.webuntis.com
+WEBUNTIS_SCHOOL=your-school-name
+WEBUNTIS_USERNAME=your-username
+WEBUNTIS_PASSWORD=your-password
+PORT=3979
+ICAL_SECRET_PATH=your-random-secret-string
+```
+
+**Important**: Choose a long, random string for `ICAL_SECRET_PATH` to secure your calendar URL.
+
+## Usage
+
+### Option 1: Docker (Recommended)
+
+Build and run with Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
+Or use Docker directly:
+
+```bash
+docker build -t icsuntis .
+docker run -d -p 3979:3979 --env-file .env icsuntis
+```
+
+### Option 2: Node.js
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the server:
+
+```bash
+node index.js
+```
+
+### Accessing Your Calendar
+
+Once running, access your iCal file at:
+
+```
+http://localhost:3979/<your-secret-path>
+```
+
+For example, if `ICAL_SECRET_PATH=abc123xyz`:
+
+```
+http://localhost:3979/abc123xyz
+```
+
+Add this URL to your calendar application to subscribe to your timetable. The calendar will automatically update every 10 minutes.
+
+**Note**: You can use either `http://localhost:3979/abc123xyz` or `http://localhost:3979/abc123xyz.ics` - both work!
+
+### Adding to Google Calendar
+
+1. Open [Google Calendar](https://calendar.google.com)
+2. Click the **+** next to "Other calendars" on the left
+3. Select **"From URL"**
+4. Paste your calendar URL (e.g., `http://your-server:3979/abc123xyz`)
+5. Click **"Add calendar"**
+
+Google Calendar will check for updates automatically based on the cache headers (every 10 minutes).
+
+### Adding to Apple Calendar
+
+1. Open Calendar app
+2. Go to **File → New Calendar Subscription**
+3. Enter your calendar URL
+4. Set auto-refresh to **every hour** or **every day**
+
+### Adding to Outlook
+
+1. Open Outlook Calendar
+2. Click **"Add calendar"** → **"Subscribe from web"**
+3. Paste your calendar URL
+4. Click **"Import"**
+
 <br>
-<h3 align="center">Have fun using ICSUntis!🙂</p>
+<h3>Have fun using ICSUntis!🙂</h3>

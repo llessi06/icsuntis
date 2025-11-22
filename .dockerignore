@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+.env
+.env.example
+.git
+.gitignore
+.idea
+timetable.ics
+*.md
+.github

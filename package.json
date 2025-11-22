@@ -11,6 +11,7 @@
   "author": "FC",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "ics": "^3.8.1",
     "webuntis": "^2.2.1"
