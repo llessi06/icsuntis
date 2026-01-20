@@ -16,8 +16,13 @@ export async function generateCalendar() {
     const events = timetable.map(mapLessonToEvent);
     const mergedEvents = mergeConsecutiveEvents(events);
 
+    const calendarOptions = {
+        productId: '//ICSUntis//Timetable Calendar//EN',
+        method: 'PUBLISH'
+    };
+
     return new Promise((resolve, reject) => {
-        createEvents(mergedEvents, (error, value) => {
+        createEvents(mergedEvents, calendarOptions, (error, value) => {
             if (error) {
                 console.error('Error during calendar creation:', error);
                 reject(error);

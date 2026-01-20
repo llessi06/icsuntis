@@ -17,6 +17,8 @@ export function mapLessonToEvent(lesson) {
     const title = buildTitle(subjects, teachers, rooms);
     const description = buildDescription(lesson, teachers, classes);
 
+    const uid = generateEventUID(lesson, dateStr, startHour, startMinute);
+
     return {
         start: [year, month, day, startHour, startMinute],
         startInputType: 'local',
@@ -26,8 +28,26 @@ export function mapLessonToEvent(lesson) {
         endOutputType: 'local',
         title,
         location: rooms || 'Kein Raum angegeben',
-        description
+        description,
+        uid,
+        sequence: 1
     };
+}
+
+function generateEventUID(lesson, dateStr, startHour, startMinute) {
+    const subjects = lesson.su && lesson.su.length > 0
+        ? lesson.su.map(subject => subject.longname).join('-')
+        : 'lesson';
+    
+    const rooms = lesson.ro && lesson.ro.length > 0
+        ? lesson.ro.map(room => room.name).join('-')
+        : 'no-room';
+    
+    const teachers = lesson.te && lesson.te.length > 0
+        ? lesson.te.map(teacher => teacher.longname).join('-')
+        : 'no-teacher';
+
+    return `${dateStr}-${startHour}${startMinute}-${subjects}-${rooms}-${teachers}@icsuntis`;
 }
 
 function extractSubjects(lesson) {
