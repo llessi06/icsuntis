@@ -1,50 +1,104 @@
-import fs from 'fs';
-import path from 'path';
-import { createEvents } from 'ics';
+import { google } from 'googleapis';
+import { config } from '../config/env.js';
 import { fetchTimetable } from './untisService.js';
 import { mapLessonToEvent } from '../utils/eventMapper.js';
 import { mergeConsecutiveEvents } from '../utils/eventMerger.js';
 
-const ICAL_FILE_PATH = path.join(process.cwd(), 'timetable.ics');
+const ICAL_SOURCE_TAG = 'icsuntis';
+const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar';
 
-let lastModified = new Date();
+const serviceAccountCredentials = parseServiceAccountJson(config.google.serviceAccountJson);
+
+const auth = new google.auth.GoogleAuth({
+    credentials: serviceAccountCredentials,
+    scopes: [CALENDAR_SCOPE]
+});
+
+const calendarClient = google.calendar({
+    version: 'v3',
+    auth
+});
 
 export async function generateCalendar() {
-    console.log('Generating iCal file...');
+    console.log('Syncing timetable to Google Calendar...');
 
     const timetable = await fetchTimetable();
     const events = timetable.map(mapLessonToEvent);
     const mergedEvents = mergeConsecutiveEvents(events);
+    const googleEvents = mergedEvents.map(mapToGoogleEvent);
 
-    const calendarOptions = {
-        productId: '//ICSUntis//Timetable Calendar//EN',
-        method: 'PUBLISH'
-    };
+    await removeManagedEvents();
+    await createEvents(googleEvents);
 
-    return new Promise((resolve, reject) => {
-        createEvents(mergedEvents, calendarOptions, (error, value) => {
-            if (error) {
-                console.error('Error during calendar creation:', error);
-                reject(error);
-                return;
-            }
+    console.log(`Google Calendar updated successfully with ${googleEvents.length} events`);
+}
 
-            fs.writeFileSync(ICAL_FILE_PATH, value);
-            lastModified = new Date();
-            console.log(`iCal file updated successfully at ${lastModified.toLocaleString()}`);
-            resolve();
+function parseServiceAccountJson(rawJson) {
+    try {
+        return JSON.parse(rawJson);
+    } catch (error) {
+        throw new Error(`GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON: ${error.message}`);
+    }
+}
+
+async function removeManagedEvents() {
+    let pageToken;
+
+    do {
+        const { data } = await calendarClient.events.list({
+            calendarId: config.google.calendarId,
+            privateExtendedProperty: [`source=${ICAL_SOURCE_TAG}`],
+            showDeleted: false,
+            singleEvents: true,
+            pageToken
         });
-    });
+
+        const managedEvents = data.items || [];
+        for (const event of managedEvents) {
+            await calendarClient.events.delete({
+                calendarId: config.google.calendarId,
+                eventId: event.id
+            });
+        }
+
+        pageToken = data.nextPageToken;
+    } while (pageToken);
 }
 
-export function getCalendarPath() {
-    return ICAL_FILE_PATH;
+async function createEvents(events) {
+    for (const event of events) {
+        await calendarClient.events.insert({
+            calendarId: config.google.calendarId,
+            requestBody: event
+        });
+    }
 }
 
-export function getLastModified() {
-    return lastModified;
+function mapToGoogleEvent(event) {
+    const startDate = createDateFromArray(event.start);
+    const endDate = createDateFromArray(event.end);
+
+    return {
+        summary: event.title,
+        location: event.location,
+        description: event.description,
+        start: {
+            dateTime: startDate.toISOString(),
+            timeZone: config.calendar.timezone
+        },
+        end: {
+            dateTime: endDate.toISOString(),
+            timeZone: config.calendar.timezone
+        },
+        extendedProperties: {
+            private: {
+                source: ICAL_SOURCE_TAG,
+                sourceUid: event.uid
+            }
+        }
+    };
 }
 
-export function calendarExists() {
-    return fs.existsSync(ICAL_FILE_PATH);
+function createDateFromArray([year, month, day, hours, minutes]) {
+    return new Date(year, month - 1, day, hours, minutes);
 }
