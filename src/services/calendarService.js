@@ -149,19 +149,19 @@ function isSameEvent(existingEvent, expectedEvent) {
 }
 
 function mapToGoogleEvent(event) {
-    const startDate = createDateFromArray(event.start);
-    const endDate = createDateFromArray(event.end);
+    const startDateTime = createLocalDateTimeString(event.start);
+    const endDateTime = createLocalDateTimeString(event.end);
 
     return {
         summary: event.title,
         location: event.location,
         description: event.description,
         start: {
-            dateTime: startDate.toISOString(),
+            dateTime: startDateTime,
             timeZone: config.calendar.timezone
         },
         end: {
-            dateTime: endDate.toISOString(),
+            dateTime: endDateTime,
             timeZone: config.calendar.timezone
         },
         extendedProperties: {
@@ -173,8 +173,13 @@ function mapToGoogleEvent(event) {
     };
 }
 
-function createDateFromArray([year, month, day, hours, minutes]) {
-    return new Date(year, month - 1, day, hours, minutes);
+function createLocalDateTimeString([year, month, day, hours, minutes]) {
+    const yyyy = String(year).padStart(4, '0');
+    const mm = String(month).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    const hh = String(hours).padStart(2, '0');
+    const min = String(minutes).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}:00`;
 }
 
 async function withRateLimitRetry(operation, contextLabel) {
